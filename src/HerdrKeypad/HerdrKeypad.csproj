@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Loupedeck.HerdrKeypad</RootNamespace>
+    <AssemblyName>HerdrKeypadPlugin</AssemblyName>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <PackageDir>$(MSBuildThisFileDirectory)../../build/$(Configuration)/</PackageDir>
+    <OutputPath>$(PackageDir)bin/</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="LogiPluginApi" Version="6.4.2.3567" ExcludeAssets="runtime;native" />
+    <Compile Include="../Herdr.Core/*.cs" LinkBase="Core" />
+    <EmbeddedResource Include="Icons/*.svg" LogicalName="Icons.%(Filename).svg" />
+  </ItemGroup>
+  <Target Name="DropPluginApiAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup><Analyzer Remove="@(Analyzer)" Condition="$([System.String]::Copy('%(Analyzer.Identity)').Contains('/.nuget/packages/'))" /></ItemGroup>
+  </Target>
+  <Target Name="CopyPackage" AfterTargets="Build">
+    <ItemGroup><PackageFiles Include="$(MSBuildThisFileDirectory)../../package/**/*" /></ItemGroup>
+    <Copy SourceFiles="@(PackageFiles)" DestinationFolder="$(PackageDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

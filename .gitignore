@@ -1,0 +1,5 @@
+bin/
+obj/
+build/
+.DS_Store
+*.lplug4
