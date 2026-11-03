@@ -27,7 +27,7 @@ public sealed class AgentsFolder : PluginDynamicFolder
     public override bool Deactivate() { this.armed = null; this.cyclePressed = null; return true; }
     public override PluginDynamicFolderNavigation GetNavigationArea(DeviceType deviceType) => PluginDynamicFolderNavigation.None;
     public override string GetButtonDisplayName(PluginImageSize imageSize) => "Agents";
-    public override BitmapImage GetButtonImage(PluginImageSize imageSize) => Face(this.FolderStatus(), imageSize);
+    public override BitmapImage GetButtonImage(PluginImageSize imageSize) => KeyFaces.State(this.FolderStatus(), imageSize);
 
     private string FolderStatus() => this.Owner.Board.Online
         ? AgentPriority.MostUrgent(this.Owner.Board.Snapshot.Recent)?.AgentStatus ?? "none"
@@ -60,7 +60,7 @@ public sealed class AgentsFolder : PluginDynamicFolder
     }
     public override BitmapImage GetCommandImage(string actionParameter, PluginImageSize imageSize) =>
         actionParameter.StartsWith("agent:confirm:", StringComparison.Ordinal) ? KeyFaces.Confirm(imageSize) :
-        actionParameter.StartsWith("agent:", StringComparison.Ordinal) ? Face(this.Find(actionParameter)?.AgentStatus ?? "unknown", imageSize) :
+        actionParameter.StartsWith("agent:", StringComparison.Ordinal) ? KeyFaces.State(this.Find(actionParameter)?.AgentStatus ?? "unknown", imageSize) :
         actionParameter.StartsWith("action:", StringComparison.Ordinal) ? KeyFaces.Shortcut(actionParameter[7..], this.GetCommandDisplayName(actionParameter, imageSize), imageSize) : KeyFaces.Glyph(" ", imageSize);
     public override bool ProcessButtonEvent2(string actionParameter, DeviceButtonEvent2 buttonEvent)
     {
@@ -164,14 +164,5 @@ public sealed class AgentsFolder : PluginDynamicFolder
             foreach (var name in next) this.CommandImageChanged(name);
         }
         catch (Exception e) { this.Plugin.Log.Error(e, "Could not refresh Herdr agents"); }
-    }
-    private static BitmapImage Face(string status, PluginImageSize size)
-    {
-        var rgb = AgentPalette.For(status);
-        var color = new BitmapColor(rgb.Red, rgb.Green, rgb.Blue);
-        using var b = new BitmapBuilder(size);
-        b.Clear(BitmapColor.Black);
-        b.FillCircle(b.Width / 2f, b.Height * 0.55f, Math.Min(b.Width, b.Height) * 0.27f, color);
-        return b.ToImage();
     }
 }

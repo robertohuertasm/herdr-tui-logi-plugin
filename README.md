@@ -3,6 +3,12 @@
 An agent-first Logitech MX Creative Keypad plugin for Herdr, with live status,
 one-press focus and navigation.
 
+<p align="center">
+  <img src="docs/images/keypad.png" width="420" alt="Herdr agents on the Keypad, with state colors">
+</p>
+
+> The images are diagrams drawn from the plugin's colors and icons, not photos.
+
 The Agents folder shows Cycle panes and Cycle tabs followed by live agents with
 state colors and session titles. Cycle tabs stays within the current workspace.
 The folder's own key shows the most urgent agent: blocked, done (unseen),
@@ -21,6 +27,22 @@ active tab. Unoccupied slots and an offline server have distinct indicators.
 **Close pane** is available under Layout and as an individual action. Hold it,
 then press **Close?** within three seconds. The action cancels if the focused
 pane or its terminal has changed before confirmation.
+
+<img src="docs/images/states.png" width="840" alt="Blocked, unread, working, idle, empty and offline key faces">
+
+| Action | What it does |
+|---|---|
+| **Recent Agent 1–9** | Shows agents in recent state-change order; press to focus. |
+| **Space 1–9** | Shows a workspace's status; press to focus, then cycle its active tab's panes. |
+| **Herdr agents** | Cycle panes, cycle tabs and browse live agents. Hold an agent and confirm to close its pane. |
+| **Herdr shortcuts** | Zoom, cycle panes, and open Layout, Tabs or Workspaces. Each shortcut is also assignable separately. |
+
+<p align="center"><img src="docs/images/agents-folder.png" width="420" alt="Agents folder with cycle controls and six agents"></p>
+
+<p align="center">
+  <img src="docs/images/shortcuts-folder.png" width="350" alt="Shortcuts folder">
+  <img src="docs/images/layout-folder.png" width="350" alt="Layout controls">
+</p>
 
 Agents are ranked by Herdr's `state_change_seq` when available. This measures
 reported state changes, not arbitrary output activity. Older servers fall back to
@@ -48,6 +70,10 @@ dotnet build src/HerdrKeypad -c Release
 dotnet run --project probes/HerdrProbe
 ```
 
+To regenerate the documentation diagrams, run `npm install --prefix tools`, then
+`node tools/render-images.cjs`. The diagrams use the plugin's colors and icons;
+the Keypad frame comes from the MIT-licensed reference plugin.
+
 For a release, set the manifest version and push a matching `vX.Y.Z` tag. GitHub
 Actions tests, builds, packs, verifies and attaches the `.lplug4` to a release.
 The repository is private. `docs/` contains the GitHub Pages site.
@@ -65,3 +91,6 @@ The socket client and terminal detection are adapted from
 MIT. Its license is included as `LICENSE-REFERENCE` and in the package metadata.
 Shortcut icons are [Microsoft Codicons](https://github.com/microsoft/vscode-codicons)
 0.0.45, licensed under CC BY 4.0; see `LICENSE-CODICONS`.
+The status icon adapts the [Herdr TUI logo](https://github.com/herdrdev/herdr/blob/v0.9.5/assets/logo.svg)
+(cropped and recolored), licensed under Apache 2.0; see `LICENSE-HERDR` and
+`NOTICE-HERDR`. This independent plugin is not endorsed by the Herdr project.

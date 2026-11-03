@@ -111,8 +111,13 @@ internal static class KeyFaces
         b.Clear(BitmapColor.Black);
         var radius = Math.Min(b.Width, b.Height) * 0.27f;
         b.FillCircle(b.Width / 2f, b.Height * 0.55f, radius, color);
-        if (status is "idle" or "unknown" or "none" or "offline")
+        if (status is "none" or "offline")
             b.FillCircle(b.Width / 2f, b.Height * 0.55f, radius * 0.7f, BitmapColor.Black);
+        else if (ReadIcon("herdr") is { } logo)
+        {
+            var side = (int)(Math.Min(b.Width, b.Height) * 0.38f);
+            b.DrawImage(logo, (b.Width - side) / 2, (int)(b.Height * 0.55f) - side / 2, side, side, BitmapRotation.None);
+        }
         return b.ToImage();
     }
 

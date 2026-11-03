@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "description": "Render the Herdr Keypad documentation diagrams",
+  "dependencies": {
+    "sharp": "0.35.5"
+  }
+}
