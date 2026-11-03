@@ -11,7 +11,15 @@ public static class FixedSlots
         slot is >= 1 and <= Count ? snapshot.Workspaces.GetValueOrDefault(slot) : null;
 
     public static string AgentLabel(Agent agent, int slot) =>
-        FirstNonBlank(agent.Name, agent.DisplayAgent, agent.TerminalTitleStripped, agent.Kind) ?? $"Recent {slot}";
+        FirstNonBlank(agent.Name, SessionTitle(agent.TerminalTitleStripped), agent.DisplayAgent, agent.Kind) ?? $"Recent {slot}";
+
+    private static string? SessionTitle(string? terminalTitle)
+    {
+        if (string.IsNullOrWhiteSpace(terminalTitle)) return null;
+        var separator = terminalTitle.LastIndexOf(" | ", StringComparison.Ordinal);
+        var title = separator >= 0 ? terminalTitle[..separator].Trim() : terminalTitle.Trim();
+        return title.Length > 0 ? title : null;
+    }
 
     public static string SpaceLabel(Workspace workspace, int slot) =>
         FirstNonBlank(workspace.Label) ?? $"Space {slot}";

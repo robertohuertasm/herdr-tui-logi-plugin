@@ -36,9 +36,9 @@ public sealed class AgentsFolder : PluginDynamicFolder
     {
         yield return this.CreateCommandName("action:cycle");
         yield return this.CreateCommandName("action:cycle-tabs");
-        foreach (var a in this.Owner.Board.Snapshot.Recent)
+        foreach (var (a, index) in this.Owner.Board.Snapshot.Recent.Select((agent, index) => (agent, index)))
         {
-            var tag = HashCode.Combine(a.Name, a.DisplayAgent, a.TerminalTitleStripped, a.Kind);
+            var tag = FixedSlots.AgentLabel(a, index + 1).GetHashCode(StringComparison.Ordinal);
             yield return this.CreateCommandName($"agent:{(this.armed?.PaneId == a.PaneId ? "confirm" : a.AgentStatus + "-" + tag.ToString("x8"))}:{a.PaneId}");
         }
     }

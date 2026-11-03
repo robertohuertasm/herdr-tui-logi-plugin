@@ -46,11 +46,16 @@ public class NavigationTests
         Assert.Equal(("tab.focus", "t1"), await selected.Task);
     }
 
-    [Fact]
-    public void AgentLabelUsesSessionTitleWhenNoExplicitNameIsPresent()
+    [Theory]
+    [InlineData(null, "Codex 2.1", "Fix login | project", "Fix login")]
+    [InlineData(null, "Codex 2.1", "Fix login", "Fix login")]
+    [InlineData(null, "Codex 2.1", "First | second | project", "First | second")]
+    [InlineData("My agent", "Codex 2.1", "Fix login | project", "My agent")]
+    [InlineData(null, "Codex 2.1", "", "Codex 2.1")]
+    public void AgentLabelShowsSessionTitleWithoutProject(string? name, string? displayAgent, string title, string expected)
     {
-        var agent = new Agent { Kind = "codex", TerminalTitleStripped = "Fix login" };
-        Assert.Equal("Fix login", FixedSlots.AgentLabel(agent, 1));
+        var agent = new Agent { Name = name, DisplayAgent = displayAgent, Kind = "codex", TerminalTitleStripped = title };
+        Assert.Equal(expected, FixedSlots.AgentLabel(agent, 1));
     }
 
     private sealed class NoTerminal : Terminal
