@@ -1,6 +1,6 @@
-Herdr Keypad includes an adapted version of the Herdr TUI logo.
+Herdr TUI Keypad includes the Herdr TUI logo and an adapted version of it.
 Original: https://github.com/herdrdev/herdr/blob/v0.9.5/assets/logo.svg
 The original artwork is distributed with Herdr under the Apache License 2.0.
-This version crops the mark and recolors it for display on state indicators.
+The status indicator version crops the mark and recolors it.
 See LICENSE-HERDR for the license text. Herdr and its logo belong to their
 respective owners; this independent plugin is not endorsed by the Herdr project.

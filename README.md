@@ -1,6 +1,6 @@
-# Herdr Keypad
+# Herdr TUI Keypad
 
-An agent-first Logitech MX Creative Keypad plugin for Herdr, with live status,
+An agent-first Logitech MX Creative Keypad plugin for [Herdr TUI](https://github.com/herdrdev/herdr), with live status,
 one-press focus and navigation.
 
 <p align="center">
@@ -34,7 +34,7 @@ pane or its terminal has changed before confirmation.
 |---|---|
 | **Recent Agent 1–9** | Shows agents in recent state-change order; press to focus. |
 | **Space 1–9** | Shows a workspace's status; press to focus, then cycle its active tab's panes. |
-| **Herdr agents** | Cycle panes, cycle tabs and browse live agents. Hold an agent and confirm to close its pane. |
+| **Herdr TUI** | Cycle panes, cycle tabs and browse live agents. Hold an agent and confirm to close its pane. |
 | **Herdr shortcuts** | Zoom, cycle panes, and open Layout, Tabs or Workspaces. Each shortcut is also assignable separately. |
 
 <p align="center"><img src="docs/images/agents-folder.png" width="420" alt="Agents folder with cycle controls and six agents"></p>
@@ -51,12 +51,12 @@ raises the configured or detected terminal on agent focus.
 
 ## Install
 
-Requires macOS, Herdr 0.9.5, Logi Options+ with Logi Plugin Service 6.4, and an
+Requires macOS, Herdr TUI 0.9.5, Logi Options+ with Logi Plugin Service 6.4, and an
 MX Creative Keypad or compatible Loupedeck device.
 
-1. Download `HerdrKeypad_<version>.lplug4` from the [latest release](https://github.com/robertohuertasm/herdr-logi-plugin/releases/latest).
+1. Download `HerdrKeypad_<version>.lplug4` from the [latest release](https://github.com/robertohuertasm/herdr-tui-logi-plugin/releases/latest).
 2. Double-click the package to install it through Logi Options+.
-3. Add **Herdr agents**, **Herdr shortcuts**, or individual actions to the Keypad.
+3. Add **Herdr TUI**, **Herdr shortcuts**, or individual actions to the Keypad.
 
 Remove any `HerdrKeypad.link` development link before installing a release.
 
@@ -73,6 +73,7 @@ dotnet run --project probes/HerdrProbe
 To regenerate the documentation diagrams, run `npm install --prefix tools`, then
 `node tools/render-images.cjs`. The diagrams use the plugin's colors and icons;
 the Keypad frame comes from the MIT-licensed reference plugin.
+To regenerate the Logi Options+ plugin icon, run `node tools/render-plugin-icon.cjs`.
 
 For a release, set the manifest version and push a matching `vX.Y.Z` tag. GitHub
 Actions tests, builds, packs, verifies and attaches the `.lplug4` to a release.
@@ -91,6 +92,6 @@ The socket client and terminal detection are adapted from
 MIT. Its license is included as `LICENSE-REFERENCE` and in the package metadata.
 Shortcut icons are [Microsoft Codicons](https://github.com/microsoft/vscode-codicons)
 0.0.45, licensed under CC BY 4.0; see `LICENSE-CODICONS`.
-The status icon adapts the [Herdr TUI logo](https://github.com/herdrdev/herdr/blob/v0.9.5/assets/logo.svg)
-(cropped and recolored), licensed under Apache 2.0; see `LICENSE-HERDR` and
+The plugin icon and status icon use the [Herdr TUI logo](https://github.com/herdrdev/herdr/blob/v0.9.5/assets/logo.svg)
+(the status icon is cropped and recolored), licensed under Apache 2.0; see `LICENSE-HERDR` and
 `NOTICE-HERDR`. This independent plugin is not endorsed by the Herdr project.

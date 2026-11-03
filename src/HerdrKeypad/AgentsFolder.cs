@@ -12,8 +12,8 @@ public sealed class AgentsFolder : PluginDynamicFolder
     private string? lastFolderStatus;
     public AgentsFolder()
     {
-        this.DisplayName = "Herdr agents";
-        this.Description = "Live agents in Herdr";
+        this.DisplayName = "Herdr TUI";
+        this.Description = "Live agents in Herdr TUI";
         this.GroupName = "Herdr";
     }
     private HerdrKeypadPlugin Owner => (HerdrKeypadPlugin)this.Plugin;

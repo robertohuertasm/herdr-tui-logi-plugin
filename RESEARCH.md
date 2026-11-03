@@ -1,7 +1,7 @@
 # Herdr provider: initial investigation
 
 2026-11-03. The local Git repository was connected to the private
-`robertohuertasm/herdr-logi-plugin` GitHub repository before the first release.
+`robertohuertasm/herdr-tui-logi-plugin` GitHub repository before the first release.
 
 ## Confirmed from source and the installed schema
 
