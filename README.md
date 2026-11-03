@@ -77,7 +77,7 @@ To regenerate the Logi Options+ plugin icon, run `node tools/render-plugin-icon.
 
 For a release, set the manifest version and push a matching `vX.Y.Z` tag. GitHub
 Actions tests, builds, packs, verifies and attaches the `.lplug4` to a release.
-The repository is private. `docs/` contains the GitHub Pages site.
+The repository is public. `docs/` contains the GitHub Pages site.
 
 ## Verification still needed
 
