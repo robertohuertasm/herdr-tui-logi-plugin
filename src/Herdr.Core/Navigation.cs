@@ -9,6 +9,7 @@ public sealed class Navigation(HerdrClient client)
     [
         new("zoom", "Zoom pane", "Main"), new("cycle", "Cycle panes", "Main"),
         new("cycle-tabs", "Cycle tabs", "Main"),
+        new("go-to", "Go to", "Main"),
         new("split-right", "Split right", "Layout"), new("split-down", "Split down", "Layout"),
         new("pane-prev", "Previous pane", "Layout"), new("pane-next", "Next pane", "Layout"),
         new("close-pane", "Close pane", "Layout"),
@@ -22,6 +23,12 @@ public sealed class Navigation(HerdrClient client)
         await this.gate.WaitAsync();
         try
         {
+            if (id == "go-to")
+            {
+                var config = Config.Load();
+                await client.SendShortcutAsync(config.GoToShortcut);
+                return;
+            }
             var s = await client.GetSnapshotAsync();
             if (id is not ("cycle" or "pane-next" or "pane-prev")) _ = client.ActivateTerminalAsync();
             if (id == "zoom")

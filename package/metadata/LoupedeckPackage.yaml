@@ -2,7 +2,7 @@ type: plugin4
 name: HerdrKeypad
 displayName: Herdr TUI
 description: Live agents and navigation for Herdr TUI on the MX Creative Keypad.
-version: 0.1.3
+version: 0.1.4
 author: Roberto Huertas
 copyright: Copyright © 2026 Roberto Huertas
 minimumLoupedeckVersion: 6.4

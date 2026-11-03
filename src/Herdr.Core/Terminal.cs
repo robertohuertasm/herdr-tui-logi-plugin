@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace Herdr;
 
-public sealed record Config(string? TerminalApp)
+public sealed record Config(string? TerminalApp, string GoToShortcut = "ctrl+b,g")
 {
     public static readonly string DefaultPath =
         Environment.GetEnvironmentVariable("HERDR_LOGI_CONFIG")
@@ -19,11 +19,10 @@ public sealed record Config(string? TerminalApp)
         {
             using var document = JsonDocument.Parse(File.ReadAllText(path ?? DefaultPath));
             var root = document.RootElement;
-            return root.ValueKind == JsonValueKind.Object
-                && root.TryGetProperty("terminalApp", out var app)
-                && app.ValueKind == JsonValueKind.String
-                ? new Config(app.GetString())
-                : new Config((string?)null);
+            string? Read(string key) => root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString() : null;
+            return new Config(Read("terminalApp"), Read("goToShortcut") ?? "ctrl+b,g");
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -163,14 +162,26 @@ public class Terminal
         }
     }
 
+    public virtual async Task SendShortcutAsync(string sequence)
+    {
+        if (!OperatingSystem.IsMacOS()) throw new HerdrException("Native keyboard shortcuts currently require macOS");
+        var config = Config.Load();
+        if (config.TerminalApp == "") throw new HerdrException("Set terminalApp to enable keyboard shortcuts");
+        var target = config.TerminalApp ?? await DetectBundleAsync()
+            ?? throw new HerdrException("Could not identify the Herdr terminal");
+        await RunAsync("/usr/bin/osascript", "-e", KeyboardShortcut.Script(target, sequence));
+    }
+
     protected virtual async Task<string> RunAsync(string command, params string[] args)
     {
-        var start = new ProcessStartInfo(command) { RedirectStandardOutput = true, UseShellExecute = false };
+        var start = new ProcessStartInfo(command) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
         foreach (var arg in args) start.ArgumentList.Add(arg);
         using var process = Process.Start(start) ?? throw new InvalidOperationException($"{command} did not start");
-        var output = await process.StandardOutput.ReadToEndAsync();
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
         await process.WaitForExitAsync();
-        if (process.ExitCode != 0) throw new InvalidOperationException($"{command} exited with {process.ExitCode}");
-        return output;
+        var diagnostic = await error;
+        if (process.ExitCode != 0) throw new InvalidOperationException($"{command} exited with {process.ExitCode}: {diagnostic.Trim()}");
+        return await output;
     }
 }

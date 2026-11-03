@@ -39,6 +39,7 @@ internal static class KeyFaces
     public static BitmapImage Shortcut(string id, string fallback, PluginImageSize size) => Icon(id switch
     {
         "zoom" => "screen-full",
+        "go-to" => "arrow-circle-right",
         "cycle" => "sync",
         "cycle-tabs" => "multiple-windows",
         "split-right" => "split-horizontal",

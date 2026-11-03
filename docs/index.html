@@ -64,15 +64,24 @@
     <p>Assign Recent Agent 1–9 directly, or open the Agents folder to browse live agents. A press focuses the pane; inside the Agents folder, a long press offers a confirmation before closing it. Remote agents carry a small R badge.</p>
   </section>
 
-  <p>Local and enabled saved SSH machines share the agent list. Remote discovery requires a Herdr CLI and remote installation that support machine API forwarding. Remote snapshots refresh every ten seconds. Space and layout shortcuts operate on the local server; changing the machine displayed by an existing TUI after focus remains unverified.</p>
+  <p>Local and enabled saved SSH machines share the agent list. Remote discovery requires a Herdr CLI and remote installation that support machine API forwarding. Remote snapshots refresh every ten seconds. Space and layout shortcuts operate on the local server; server focus does not switch the machine displayed by an existing TUI.</p>
 
   <section>
     <h2>Shortcuts</h2>
     <div class="pair">
-      <figure><img src="images/shortcuts-folder.png" alt="Shortcuts folder with Zoom pane, Cycle panes, Cycle tabs, Split right, Layout, Tabs and Workspaces"><figcaption>Shortcuts</figcaption></figure>
+      <figure><img src="images/shortcuts-folder.png" alt="Shortcuts folder with Zoom pane, Cycle panes, Cycle tabs, Go to, Layout, Tabs and Workspaces"><figcaption>Shortcuts</figcaption></figure>
       <figure><img src="images/layout-folder.png" alt="Layout folder with split, pane navigation and Close pane"><figcaption>Layout</figcaption></figure>
     </div>
-    <p>Zoom a pane, cycle panes or tabs, split the layout, and move between workspaces. Each shortcut is also an individual action. To close the focused pane, hold <b>Close pane</b>, then press <b>Close?</b> within three seconds.</p>
+    <p>Zoom a pane, cycle panes or tabs, open Go to, split the layout, and move between workspaces. Each shortcut is also an individual action. To close the focused pane, hold <b>Close pane</b>, then press <b>Close?</b> within three seconds.</p>
+  </section>
+
+  <section>
+    <h2>Go to and navigation limits</h2>
+    <p><b>Go to</b> opens Herdr's native picker using <b>Ctrl+B, then G</b>. With default Herdr bindings, no configuration change is needed. This macOS action activates the terminal and sends keys through System Events, requiring Accessibility access for <b>Logi Plugin Service</b>. Keep the intended Herdr TUI active in that terminal.</p>
+    <p>For a custom prefix or Go to binding, set <code>goToShortcut</code> in <code>~/.config/herdr-logi-plugin/config.json</code> (or <code>HERDR_LOGI_CONFIG</code>) to match. The default is <code>"ctrl+b,g"</code>; commas separate successive strokes.</p>
+    <p><b>Remote monitoring and focus are different.</b> Remote agents appear in the combined list and their focus/close requests reach their own server. A successful server focus does <b>not</b> switch the machine displayed by an existing TUI. Select the machine or agent in Herdr's UI or Go to when moving between Local and a saved SSH machine.</p>
+    <p>Space keys, Previous/Next Workspace, Cycle panes/tabs and layout shortcuts operate on the <b>local server</b>, even while the TUI displays a remote machine. They do not cycle across machines.</p>
+    <p>Herdr's native workspace/agent navigation can cross connected machines using optional keybindings. This plugin does not configure or provide those bindings; you can create your own keyboard macros in Logi Options+ with matching shortcuts configured in Herdr.</p>
   </section>
 
   <section>

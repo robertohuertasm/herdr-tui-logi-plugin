@@ -194,6 +194,8 @@ public sealed class HerdrClient
     // async work (NewTabTile), instead of relying on a focus call to do it.
     public Task ActivateTerminalAsync() => terminal.ActivateAsync();
 
+    public Task SendShortcutAsync(string sequence) => terminal.SendShortcutAsync(sequence);
+
     public Task CreateTabAsync(string workspaceId) =>
         RequestAsync("tab.create", new { workspace_id = workspaceId, focus = true }, TabCreateTimeout);
 

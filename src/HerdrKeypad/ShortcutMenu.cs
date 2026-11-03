@@ -29,7 +29,7 @@ internal sealed class ShortcutMenu
             yield return "action:zoom";
             yield return "action:cycle";
             yield return "action:cycle-tabs";
-            yield return "action:split-right";
+            yield return "action:go-to";
             foreach (var group in new[] { "Layout", "Tabs", "Workspaces" }) yield return "group:" + group;
         }
         else

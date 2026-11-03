@@ -19,7 +19,7 @@ working, then idle. Ties follow the same recent-state-change order.
 Blocked is red, done is blue, working is amber, and idle is green.
 Press to focus; hold and then press **Close?** within three seconds to close the
 pane. Herdr closes the pane, which stops its running process. The Shortcuts folder
-shows Zoom pane on the top row, Cycle panes, Cycle tabs and Split right on the
+shows Zoom pane on the top row, Cycle panes, Cycle tabs and Go to on the
 middle row, then Layout, Tabs and Workspaces on the bottom row. When opened from
 Agents, Back beside the native Back returns to the agent list; the standalone
 Shortcuts folder leaves that position blank. Each shortcut is independently assignable.
@@ -63,12 +63,37 @@ logged without blocking local agents. Both the local CLI and remote installation
 must support machine API forwarding. Set `HERDR_BIN_PATH` if the CLI is installed
 outside `~/.local/bin`, standard Homebrew locations, or the service's PATH.
 
-Agent focus and confirmed close are routed to the originating server. Switching
-the machine displayed by an already-open Herdr TUI after focus remains unverified.
+Agent focus and confirmed close are routed to the originating server. Server focus does not switch
+the machine displayed by an already-open Herdr TUI.
 Space keys and layout shortcuts operate on the local server. A combined list uses
 locally observed status changes for recency because server sequence counters are
 independent; it does not reproduce the TUI's custom filters or client-specific
 Done/seen state.
+
+## Go to and navigation limits
+
+**Go to** opens Herdr's native picker (Ctrl+B, then G). It replaces Split right
+in the Shortcuts menu; Split right remains under Layout. With Herdr's default
+bindings, Go to needs no Herdr configuration change. It activates the terminal
+and sends keys through System Events, requiring macOS Accessibility access for
+Logi Plugin Service. Keep the intended Herdr TUI active in that terminal.
+
+If you customize Herdr's prefix or Go to binding, set `goToShortcut` in
+`~/.config/herdr-logi-plugin/config.json` (or `HERDR_LOGI_CONFIG`) to match, e.g.
+`"ctrl+b,g"`. A comma separates successive strokes; supported modifiers are
+`ctrl`, `alt`, `shift` and `cmd`, followed by a single letter or digit.
+
+**Cross-machine navigation:** remote agents are listed and their focus/close
+requests go to the producing server. A successful server focus does **not**
+select that machine in an already-open TUI. Select the machine or agent in
+Herdr's UI/Go to when moving between Local and a saved SSH machine.
+
+Space keys, Previous/Next Workspace, Cycle panes/tabs and other layout shortcuts
+operate through the **local server**, even when the TUI displays a remote
+machine. They do not cycle across machines. Herdr's own native workspace/agent
+navigation can cross connected machines, but those optional bindings are not
+configured or provided by this plugin. You can assign your own keyboard macros
+in Logi Options+ and configure matching native bindings in Herdr.
 
 ## Install
 

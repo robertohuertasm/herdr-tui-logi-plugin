@@ -107,7 +107,7 @@ async function main() {
   ], 'agents-folder.png');
   await renderDeck([
     action('chevron-left','Back'),{ type: 'blank', label: '' },action('screen-full','Zoom pane'),
-    action('sync','Cycle panes'),action('multiple-windows','Cycle tabs'),action('split-horizontal','Split right'),
+    action('sync','Cycle panes'),action('multiple-windows','Cycle tabs'),action('arrow-circle-right','Go to'),
     action('layout','Layout'),action('multiple-windows','Tabs'),action('folder','Workspaces'),
   ], 'shortcuts-folder.png');
   await renderDeck([
