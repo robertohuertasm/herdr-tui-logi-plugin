@@ -24,9 +24,9 @@ public sealed class RecencyTracker
         {
             foreach (var agent in agents)
             {
-                if (!seen.TryGetValue(agent.PaneId, out var entry))
+                if (!seen.TryGetValue(agent.Key, out var entry))
                 {
-                    seen[agent.PaneId] = new Entry(agent.AgentStatus, bootstrapped ? ++activitySeq : --firstSeenSeq);
+                    seen[agent.Key] = new Entry(agent.AgentStatus, bootstrapped ? ++activitySeq : --firstSeenSeq);
                 }
                 else if (entry.Status != agent.AgentStatus)
                 {
@@ -34,11 +34,11 @@ public sealed class RecencyTracker
                     entry.Seq = ++activitySeq;
                 }
             }
-            var live = agents.Select(a => a.PaneId).ToHashSet();
+            var live = agents.Select(a => a.Key).ToHashSet();
             foreach (var paneId in seen.Keys.Where(id => !live.Contains(id)).ToList()) seen.Remove(paneId);
             bootstrapped = true;
             // OrderByDescending is stable, so equal sequence numbers keep their order.
-            return agents.OrderByDescending(a => seen.TryGetValue(a.PaneId, out var e) ? e.Seq : 0).ToList();
+            return agents.OrderByDescending(a => seen.TryGetValue(a.Key, out var e) ? e.Seq : 0).ToList();
         }
     }
 }

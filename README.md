@@ -1,7 +1,9 @@
 # Herdr TUI Keypad
 
-An agent-first Logitech MX Creative Keypad plugin for [Herdr TUI](https://github.com/herdrdev/herdr), with live status,
-one-press focus and navigation.
+Monitor **local and remote agents together** on the Logitech MX Creative Keypad
+with this agent-first plugin for [Herdr TUI](https://github.com/herdrdev/herdr).
+Get live status, pane focus and navigation, with a small **R** badge marking
+agents on saved SSH machines.
 
 <p align="center">
   <img src="docs/images/keypad.png" width="420" alt="Herdr agents on the Keypad, with state colors">
@@ -9,15 +11,18 @@ one-press focus and navigation.
 
 > The images are diagrams drawn from the plugin's colors and icons, not photos.
 
-The Agents folder shows Cycle panes and Cycle tabs followed by live agents with
-state colors and session titles. Cycle tabs stays within the current workspace.
+The Agents folder shows Shortcuts and Cycle panes followed by live agents with
+state colors and session titles. Shortcuts opens the shared shortcut menu; its
+Back button returns to the agents.
 The folder's own key shows the most urgent agent: blocked, done (unseen),
 working, then idle. Ties follow the same recent-state-change order.
 Blocked is red, done is blue, working is amber, and idle is green.
 Press to focus; hold and then press **Close?** within three seconds to close the
 pane. Herdr closes the pane, which stops its running process. The Shortcuts folder
-starts with Zoom pane and Cycle panes, followed by Layout, Tabs and Workspaces;
-each shortcut is independently assignable.
+shows Zoom pane on the top row, Cycle panes, Cycle tabs and Split right on the
+middle row, then Layout, Tabs and Workspaces on the bottom row. When opened from
+Agents, Back beside the native Back returns to the agent list; the standalone
+Shortcuts folder leaves that position blank. Each shortcut is independently assignable.
 
 **Recent Agent 1–9** are individual keys for the agents in recent-state-change
 order; press one to focus its pane. **Space 1–9** show each numbered workspace's
@@ -34,7 +39,7 @@ pane or its terminal has changed before confirmation.
 |---|---|
 | **Recent Agent 1–9** | Shows agents in recent state-change order; press to focus. |
 | **Space 1–9** | Shows a workspace's status; press to focus, then cycle its active tab's panes. |
-| **Herdr TUI** | Cycle panes, cycle tabs and browse live agents. Hold an agent and confirm to close its pane. |
+| **Herdr TUI** | Open shortcuts, cycle panes and browse live agents. Hold an agent and confirm to close its pane. |
 | **Herdr shortcuts** | Zoom, cycle panes, and open Layout, Tabs or Workspaces. Each shortcut is also assignable separately. |
 
 <p align="center"><img src="docs/images/agents-folder.png" width="420" alt="Agents folder with cycle controls and six agents"></p>
@@ -48,6 +53,22 @@ Agents are ranked by Herdr's `state_change_seq` when available. This measures
 reported state changes, not arbitrary output activity. Older servers fall back to
 locally observed status changes. The plugin talks to the local Herdr socket and
 raises the configured or detected terminal on agent focus.
+
+The Agents folder and Recent Agent keys also discover enabled saved SSH machines
+through `herdr machine list --json` and `herdr --machine <id> api snapshot`.
+Remote entries show a small R badge on the status icon, keeping their titles
+free of machine prefixes. Remote snapshots refresh in the
+background every ten seconds; unavailable machines are omitted and failures are
+logged without blocking local agents. Both the local CLI and remote installation
+must support machine API forwarding. Set `HERDR_BIN_PATH` if the CLI is installed
+outside `~/.local/bin`, standard Homebrew locations, or the service's PATH.
+
+Agent focus and confirmed close are routed to the originating server. Switching
+the machine displayed by an already-open Herdr TUI after focus remains unverified.
+Space keys and layout shortcuts operate on the local server. A combined list uses
+locally observed status changes for recency because server sequence counters are
+independent; it does not reproduce the TUI's custom filters or client-specific
+Done/seen state.
 
 ## Install
 

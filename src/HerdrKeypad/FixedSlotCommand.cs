@@ -7,7 +7,7 @@ public sealed class FixedSlotCommand : PluginDynamicCommand
     private readonly HerdrKeypadPlugin owner;
     private readonly int slot;
     private readonly bool isSpace;
-    private (string Status, string Label)? lastFace;
+    private (string Status, string Label, bool Remote)? lastFace;
 
     public FixedSlotCommand(HerdrKeypadPlugin owner, int slot, bool isSpace)
         : base(isSpace ? $"Space {slot}" : $"Recent Agent {slot}",
@@ -20,17 +20,17 @@ public sealed class FixedSlotCommand : PluginDynamicCommand
         this.Name = isSpace ? $"herdr_keypad_space_{slot}" : $"herdr_keypad_recent_{slot}";
     }
 
-    private (string Status, string Label) Face()
+    private (string Status, string Label, bool Remote) Face()
     {
-        if (!this.owner.Board.Online) return ("offline", "Offline");
+        if (!this.owner.Board.Online) return ("offline", "Offline", false);
         var snapshot = this.owner.Board.Snapshot;
         if (this.isSpace)
         {
             var space = FixedSlots.Space(snapshot, this.slot);
-            return space is null ? ("none", $"Space {this.slot}") : (space.AgentStatus, FixedSlots.SpaceLabel(space, this.slot));
+            return space is null ? ("none", $"Space {this.slot}", false) : (space.AgentStatus, FixedSlots.SpaceLabel(space, this.slot), false);
         }
         var agent = FixedSlots.Recent(snapshot, this.slot);
-        return agent is null ? ("none", $"Recent {this.slot}") : (agent.AgentStatus, FixedSlots.AgentLabel(agent, this.slot));
+        return agent is null ? ("none", $"Recent {this.slot}", false) : (agent.AgentStatus, FixedSlots.AgentLabel(agent, this.slot), agent.MachineId is not null);
     }
 
     public void Refresh()
@@ -46,7 +46,7 @@ public sealed class FixedSlotCommand : PluginDynamicCommand
     {
         if (!this.owner.Board.Online) return;
         if (this.isSpace) _ = this.PressSpaceAsync();
-        else if (FixedSlots.Recent(this.owner.Board.Snapshot, this.slot) is { } agent) _ = this.PressAgentAsync(agent.PaneId);
+        else if (FixedSlots.Recent(this.owner.Board.Snapshot, this.slot) is { } agent) _ = this.PressAgentAsync(agent.Key);
     }
 
     private async Task PressSpaceAsync()
@@ -62,5 +62,5 @@ public sealed class FixedSlotCommand : PluginDynamicCommand
     }
 
     protected override string GetCommandDisplayName(string actionParameter, PluginImageSize imageSize) => this.Face().Label;
-    protected override BitmapImage GetCommandImage(string actionParameter, PluginImageSize imageSize) => KeyFaces.State(this.Face().Status, imageSize);
+    protected override BitmapImage GetCommandImage(string actionParameter, PluginImageSize imageSize) => KeyFaces.State(this.Face().Status, imageSize, this.Face().Remote);
 }

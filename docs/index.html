@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <title>Herdr TUI agents on the MX Creative Keypad</title>
-  <meta name="description" content="See live Herdr TUI agent status, focus a pane, and navigate workspaces from the Logitech MX Creative Keypad.">
+  <meta name="description" content="Monitor local and remote Herdr TUI agents together on the Logitech MX Creative Keypad, with live status, R badges and pane navigation.">
   <meta property="og:title" content="Herdr TUI agents on the MX Creative Keypad">
-  <meta property="og:description" content="Live status and one-press focus for your Herdr TUI agents.">
+  <meta property="og:description" content="Local and remote Herdr TUI agents together on the MX Creative Keypad.">
   <meta property="og:image" content="images/keypad.png">
   <style>
     :root{color-scheme:dark;--bg:#0f1012;--card:#17181b;--fg:#e8e8ea;--muted:#a0a3a8;--line:#2a2c30;--accent:#f0b400}
@@ -34,11 +34,11 @@
 <body><main>
   <header class="hero">
     <h1>Herdr TUI agents on the MX Creative Keypad</h1>
-    <p class="tag">Live status of your <a href="https://github.com/herdrdev/herdr">Herdr TUI</a> agents on the Logitech MX Creative Keypad. Press a key to jump to a pane.</p>
+    <p class="tag">Monitor <strong>local and remote agents together</strong> on the Logitech MX Creative Keypad with <a href="https://github.com/herdrdev/herdr">Herdr TUI</a>. Live state colors, pane navigation, and a small <strong>R</strong> badge for agents on saved SSH machines.</p>
     <a class="btn" href="https://github.com/robertohuertasm/herdr-tui-logi-plugin/releases/latest">Download HerdrKeypad.lplug4</a>
     <a class="btn alt" href="https://github.com/robertohuertasm/herdr-tui-logi-plugin">Source on GitHub</a>
     <img src="images/keypad.png" alt="Keypad with Herdr agent keys in red, amber, blue and green">
-    <p class="note">Diagrams drawn from the plugin's colors and icons, not photos. The repository is currently private.</p>
+    <p class="note">Diagrams drawn from the plugin's colors and icons, not photos.</p>
   </header>
 
   <section>
@@ -59,15 +59,17 @@
     <h2>Agents at a glance</h2>
     <div class="pair">
       <figure><img src="images/keypad.png" alt="Recent Agent keys with example session titles"><figcaption>Recent Agent keys</figcaption></figure>
-      <figure><img src="images/agents-folder.png" alt="Agents folder with Back, Cycle panes, Cycle tabs and six agents"><figcaption>Agents folder</figcaption></figure>
+      <figure><img src="images/agents-folder.png" alt="Agents folder with Back, Shortcuts, Cycle panes and six agents"><figcaption>Agents folder</figcaption></figure>
     </div>
-    <p>Assign Recent Agent 1–9 directly, or open the Agents folder to browse live agents. A press focuses the pane; a long press offers a confirmation before closing it.</p>
+    <p>Assign Recent Agent 1–9 directly, or open the Agents folder to browse live agents. A press focuses the pane; inside the Agents folder, a long press offers a confirmation before closing it. Remote agents carry a small R badge.</p>
   </section>
+
+  <p>Local and enabled saved SSH machines share the agent list. Remote discovery requires a Herdr CLI and remote installation that support machine API forwarding. Remote snapshots refresh every ten seconds. Space and layout shortcuts operate on the local server; changing the machine displayed by an existing TUI after focus remains unverified.</p>
 
   <section>
     <h2>Shortcuts</h2>
     <div class="pair">
-      <figure><img src="images/shortcuts-folder.png" alt="Shortcuts folder with Zoom pane, Cycle panes, Layout, Tabs and Workspaces"><figcaption>Shortcuts</figcaption></figure>
+      <figure><img src="images/shortcuts-folder.png" alt="Shortcuts folder with Zoom pane, Cycle panes, Cycle tabs, Split right, Layout, Tabs and Workspaces"><figcaption>Shortcuts</figcaption></figure>
       <figure><img src="images/layout-folder.png" alt="Layout folder with split, pane navigation and Close pane"><figcaption>Layout</figcaption></figure>
     </div>
     <p>Zoom a pane, cycle panes or tabs, split the layout, and move between workspaces. Each shortcut is also an individual action. To close the focused pane, hold <b>Close pane</b>, then press <b>Close?</b> within three seconds.</p>
@@ -77,7 +79,7 @@
     <h2>Install</h2>
     <ol>
       <li>Requirements: macOS, Herdr TUI 0.9.5, Logi Options+ with Logi Plugin Service 6.4 or later, and an MX Creative Keypad or compatible Loupedeck.</li>
-      <li>Download <code>HerdrKeypad_&lt;version&gt;.lplug4</code> from the <a href="https://github.com/robertohuertasm/herdr-tui-logi-plugin/releases/latest">latest release</a>. Access to the private repository is currently required.</li>
+      <li>Download <code>HerdrKeypad_&lt;version&gt;.lplug4</code> from the <a href="https://github.com/robertohuertasm/herdr-tui-logi-plugin/releases/latest">latest release</a>.</li>
       <li>Double-click it to install it with Logi Options+, then add the actions to your Keypad.</li>
     </ol>
   </section>

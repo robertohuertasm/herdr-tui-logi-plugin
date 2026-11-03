@@ -5,6 +5,8 @@ using Herdr;
 public sealed class AgentsFolder : PluginDynamicFolder
 {
     private string[] names = [];
+    private ShortcutMenu shortcuts = null!;
+    private bool showingShortcuts;
     private CloseTarget? armed;
     private DateTime armedUntil;
     private bool longPressHandled;
@@ -19,12 +21,13 @@ public sealed class AgentsFolder : PluginDynamicFolder
     private HerdrKeypadPlugin Owner => (HerdrKeypadPlugin)this.Plugin;
     public override bool Load()
     {
+        this.shortcuts = new ShortcutMenu(this.Owner, this.Changed, this.ReturnToAgents);
         this.Owner.Board.Changed += this.Changed;
         return true;
     }
-    public override bool Unload() { this.Owner.Board.Changed -= this.Changed; return true; }
-    public override bool Activate() { this.armed = null; this.cyclePressed = null; this.names = []; this.ButtonActionNamesChanged(); return true; }
-    public override bool Deactivate() { this.armed = null; this.cyclePressed = null; return true; }
+    public override bool Unload() { this.shortcuts.Reset(); this.Owner.Board.Changed -= this.Changed; return true; }
+    public override bool Activate() { this.showingShortcuts = false; this.shortcuts.Reset(); this.armed = null; this.cyclePressed = null; this.names = []; this.ButtonActionNamesChanged(); return true; }
+    public override bool Deactivate() { this.showingShortcuts = false; this.shortcuts.Reset(); this.armed = null; this.cyclePressed = null; return true; }
     public override PluginDynamicFolderNavigation GetNavigationArea(DeviceType deviceType) => PluginDynamicFolderNavigation.None;
     public override string GetButtonDisplayName(PluginImageSize imageSize) => "Agents";
     public override BitmapImage GetButtonImage(PluginImageSize imageSize) => KeyFaces.State(this.FolderStatus(), imageSize);
@@ -34,37 +37,47 @@ public sealed class AgentsFolder : PluginDynamicFolder
         : "offline";
     public override IEnumerable<string> GetButtonPressActionNames(DeviceType deviceType)
     {
+        if (this.showingShortcuts)
+        {
+            foreach (var parameter in this.shortcuts.Parameters()) yield return this.CreateCommandName("shortcuts:" + parameter);
+            yield break;
+        }
+        yield return this.CreateCommandName("open-shortcuts");
         yield return this.CreateCommandName("action:cycle");
-        yield return this.CreateCommandName("action:cycle-tabs");
         foreach (var (a, index) in this.Owner.Board.Snapshot.Recent.Select((agent, index) => (agent, index)))
         {
             var tag = FixedSlots.AgentLabel(a, index + 1).GetHashCode(StringComparison.Ordinal);
-            yield return this.CreateCommandName($"agent:{(this.armed?.PaneId == a.PaneId ? "confirm" : a.AgentStatus + "-" + tag.ToString("x8"))}:{a.PaneId}");
+            yield return this.CreateCommandName($"agent:{(this.armed?.PaneId == a.Key ? "confirm" : a.AgentStatus + "-" + tag.ToString("x8"))}:{a.Key}");
         }
     }
     private Agent? Find(string parameter)
     {
         if (!parameter.StartsWith("agent:", StringComparison.Ordinal)) return null;
         var colon = parameter.IndexOf(':', 6);
-        return colon < 0 ? null : this.Owner.Board.Snapshot.Agents.FirstOrDefault(a => a.PaneId == parameter[(colon + 1)..]);
+        return colon < 0 ? null : this.Owner.Board.Snapshot.Agents.FirstOrDefault(a => a.Key == parameter[(colon + 1)..]);
     }
     public override string GetCommandDisplayName(string actionParameter, PluginImageSize imageSize)
     {
+        if (actionParameter.StartsWith("shortcuts:", StringComparison.Ordinal)) return this.shortcuts.GetCommandDisplayName(actionParameter[10..], imageSize);
+        if (actionParameter == "open-shortcuts") return "Shortcuts";
         if (actionParameter == "action:cycle") return "Cycle panes";
         if (actionParameter == "action:cycle-tabs") return "Cycle tabs";
         var agent = this.Find(actionParameter);
         if (agent is null) return " ";
         if (actionParameter.StartsWith("agent:confirm:", StringComparison.Ordinal)) return "Close?";
-        var index = this.Owner.Board.Snapshot.Recent.ToList().FindIndex(a => a.PaneId == agent.PaneId);
+        var index = this.Owner.Board.Snapshot.Recent.ToList().FindIndex(a => a.Key == agent.Key);
         return FixedSlots.AgentLabel(agent, index + 1);
     }
     public override BitmapImage GetCommandImage(string actionParameter, PluginImageSize imageSize) =>
+        actionParameter.StartsWith("shortcuts:", StringComparison.Ordinal) ? this.shortcuts.GetCommandImage(actionParameter[10..], imageSize) :
+        actionParameter == "open-shortcuts" ? KeyFaces.Icon("layout", "Shortcuts", imageSize) :
         actionParameter.StartsWith("agent:confirm:", StringComparison.Ordinal) ? KeyFaces.Confirm(imageSize) :
-        actionParameter.StartsWith("agent:", StringComparison.Ordinal) ? KeyFaces.State(this.Find(actionParameter)?.AgentStatus ?? "unknown", imageSize) :
+        actionParameter.StartsWith("agent:", StringComparison.Ordinal) ? KeyFaces.State(this.Find(actionParameter)?.AgentStatus ?? "unknown", imageSize, this.Find(actionParameter)?.MachineId is not null) :
         actionParameter.StartsWith("action:", StringComparison.Ordinal) ? KeyFaces.Shortcut(actionParameter[7..], this.GetCommandDisplayName(actionParameter, imageSize), imageSize) : KeyFaces.Glyph(" ", imageSize);
     public override bool ProcessButtonEvent2(string actionParameter, DeviceButtonEvent2 buttonEvent)
     {
-        if (actionParameter is "action:cycle" or "action:cycle-tabs")
+        if (actionParameter.StartsWith("shortcuts:", StringComparison.Ordinal)) return this.showingShortcuts && this.shortcuts.ProcessButtonEvent2(actionParameter[10..], buttonEvent);
+        if (actionParameter is "open-shortcuts" or "action:cycle")
         {
             switch (buttonEvent.EventType)
             {
@@ -86,7 +99,7 @@ public sealed class AgentsFolder : PluginDynamicFolder
                 this.longPressHandled = true;
                 if (this.Find(actionParameter) is { TerminalId.Length: > 0 } agent)
                 {
-                    var target = new CloseTarget(agent.PaneId, agent.TerminalId, agent.WorkspaceId, agent.Kind);
+                    var target = new CloseTarget(agent.Key, agent.TerminalId, agent.WorkspaceId, agent.Kind);
                     this.armed = target;
                     this.armedUntil = DateTime.UtcNow.AddSeconds(3);
                     this.Changed();
@@ -103,7 +116,18 @@ public sealed class AgentsFolder : PluginDynamicFolder
     }
     public override void RunCommand(string actionParameter)
     {
-        if (actionParameter is "action:cycle" or "action:cycle-tabs")
+        if (actionParameter.StartsWith("shortcuts:", StringComparison.Ordinal))
+        {
+            if (this.showingShortcuts) this.shortcuts.RunCommand(actionParameter[10..]);
+        }
+        else if (actionParameter == "open-shortcuts")
+        {
+            this.armed = null;
+            this.shortcuts.Reset();
+            this.showingShortcuts = true;
+            this.Changed();
+        }
+        else if (actionParameter == "action:cycle")
         {
             var id = actionParameter[7..];
             this.Plugin.Log.Info($"{id} pressed in Agents folder");
@@ -113,11 +137,19 @@ public sealed class AgentsFolder : PluginDynamicFolder
         {
             var target = this.armed;
             this.armed = null;
-            if (target is not null && target.PaneId == agent.PaneId && actionParameter.StartsWith("agent:confirm:", StringComparison.Ordinal) && DateTime.UtcNow <= this.armedUntil)
+            if (target is not null && target.PaneId == agent.Key && actionParameter.StartsWith("agent:confirm:", StringComparison.Ordinal) && DateTime.UtcNow <= this.armedUntil)
                 _ = this.CloseAsync(target);
-            else _ = this.FocusAsync(agent.PaneId);
+            else _ = this.FocusAsync(agent.Key);
             this.Changed();
         }
+    }
+    private void ReturnToAgents()
+    {
+        this.shortcuts.Reset();
+        this.showingShortcuts = false;
+        this.armed = null;
+        this.cyclePressed = null;
+        this.Changed();
     }
     private async Task ExpireAsync(CloseTarget target)
     {

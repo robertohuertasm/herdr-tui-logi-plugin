@@ -16,7 +16,7 @@ public sealed class AgentBoard(HerdrClient client)
         {
             try
             {
-                var next = await client.GetSnapshotAsync();
+                var next = await client.GetAgentSnapshotAsync();
                 Volatile.Write(ref this.snapshot, next);
                 Volatile.Write(ref this.online, true);
             }

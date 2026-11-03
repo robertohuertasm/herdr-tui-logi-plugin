@@ -25,14 +25,17 @@ public sealed class HerdrClient
     };
 
     private readonly RecencyTracker recency = new();
+    private readonly RecencyTracker combinedRecency = new();
+    private readonly RemoteAgents remote;
     private readonly Terminal terminal;
     private int nextId;
     private bool warnedProtocol;
 
-    public HerdrClient(string? socketPath = null, Terminal? terminal = null)
+    public HerdrClient(string? socketPath = null, Terminal? terminal = null, RemoteAgents? remoteAgents = null)
     {
         SocketPath = socketPath ?? DefaultSocketPath;
         this.terminal = terminal ?? new Terminal();
+        remote = remoteAgents ?? new RemoteAgents();
     }
 
     public string SocketPath { get; }
@@ -118,6 +121,40 @@ public sealed class HerdrClient
         };
     }
 
+    public async Task<Snapshot> GetAgentSnapshotAsync()
+    {
+        var remotes = remote.Read();
+        Snapshot local;
+        try { local = await GetSnapshotAsync(); }
+        catch when (remotes.Count > 0) { local = Snapshot.Empty; }
+        var agents = local.Agents.Concat(remotes).ToList();
+        // Sequence counters from different servers cannot be compared. Observe
+        // transitions locally when several servers contribute to the list.
+        var recent = remotes.Count > 0 ? combinedRecency.Rank(agents) : local.Recent;
+        return local with { Agents = agents, Recent = recent };
+    }
+
+    internal async Task<Snapshot> SnapshotForAgentAsync(string key)
+    {
+        if (!RemoteTarget(key, out var machine, out _)) return await GetSnapshotAsync();
+        return new Snapshot { Agents = await remote.SnapshotAsync(machine, machine) };
+    }
+
+    internal static bool RemoteTarget(string key, out string machine, out string pane)
+    {
+        machine = pane = "";
+        if (!key.StartsWith("remote:", StringComparison.Ordinal)) return false;
+        var separator = key.IndexOf(':', 7);
+        if (separator <= 7 || separator == key.Length - 1) throw new HerdrException("Invalid remote agent key");
+        machine = key[7..separator];
+        pane = key[(separator + 1)..];
+        return true;
+    }
+
+    internal Task CloseAgentPaneAsync(string key) => RemoteTarget(key, out var machine, out var pane)
+        ? remote.PaneAsync(machine, pane, "close")
+        : RequestAsync("pane.close", new { pane_id = key });
+
     // Pane ids look like `w1:p10`; compare their numeric parts so p10 sorts after p2.
     public static int ComparePaneIds(string a, string b)
     {
@@ -163,7 +200,9 @@ public sealed class HerdrClient
     public async Task FocusPaneAsync(string paneId)
     {
         _ = terminal.ActivateAsync();
-        await RequestAsync("pane.focus", new { pane_id = paneId });
+        if (RemoteTarget(paneId, out var machine, out var pane))
+            await remote.PaneAsync(machine, pane, "focus");
+        else await RequestAsync("pane.focus", new { pane_id = paneId });
     }
 
     public static string? NextPaneInFocusedWorkspace(Snapshot snapshot, string workspaceId)

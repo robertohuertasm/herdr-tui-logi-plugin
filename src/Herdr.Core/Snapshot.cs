@@ -32,6 +32,9 @@ public sealed record Tab
 
 public sealed record Agent
 {
+    public string? MachineId { get; init; }
+    public string? MachineLabel { get; init; }
+    public string Key => MachineId is null ? PaneId : $"remote:{MachineId}:{PaneId}";
     public string PaneId { get; init; } = "";
     public string WorkspaceId { get; init; } = "";
     public string TabId { get; init; } = "";

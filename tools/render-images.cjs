@@ -27,7 +27,7 @@ const icon = (name, x, y, size, color = '#fff') => {
   const item = svgBody(name);
   return `<svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="${item.viewBox}" fill="${color}">${item.content.replace(/currentColor/g, color)}</svg>`;
 };
-const state = (status, label) => ({ type: 'state', status, label });
+const state = (status, label, remote = false) => ({ type: 'state', status, label, remote });
 const action = (name, label) => ({ type: 'action', name, label });
 const key = (item, x, y, side) => {
   const scale = side / 132;
@@ -36,7 +36,7 @@ const key = (item, x, y, side) => {
     const inner = item.status === 'none' || item.status === 'offline'
       ? '<circle cx="66" cy="49" r="20" fill="#000"/>'
       : icon('herdr', 44, 27, 44, '#000');
-    content = `<circle cx="66" cy="49" r="28" fill="${colors[item.status]}"/>${inner}`;
+    content = `<circle cx="66" cy="49" r="28" fill="${colors[item.status]}"/>${inner}${item.remote ? '<circle cx="91" cy="25" r="14" fill="#000"/><circle cx="91" cy="25" r="11" fill="#fff"/><text x="91" y="29" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="600" fill="#000">R</text>' : ''}`;
   } else if (item.type === 'blank') {
     content = '';
   } else if (item.type === 'confirm') {
@@ -101,14 +101,14 @@ async function main() {
     state('none','Recent 7'),state('none','Recent 8'),state('none','Recent 9'),
   ], 'keypad.png');
   await renderDeck([
-    action('chevron-left','Back'), action('sync','Cycle panes'), action('multiple-windows','Cycle tabs'),
-    state('blocked','fix-login'), state('done','review-pr'), state('working','add-tests'),
+    action('chevron-left','Back'), action('layout','Shortcuts'), action('sync','Cycle panes'),
+    state('blocked','fix-login', true), state('done','review-pr'), state('working','add-tests', true),
     state('idle','docs'), state('working','refactor'), state('idle','release'),
   ], 'agents-folder.png');
   await renderDeck([
-    action('chevron-left','Back'),action('screen-full','Zoom pane'),action('sync','Cycle panes'),
+    action('chevron-left','Back'),{ type: 'blank', label: '' },action('screen-full','Zoom pane'),
+    action('sync','Cycle panes'),action('multiple-windows','Cycle tabs'),action('split-horizontal','Split right'),
     action('layout','Layout'),action('multiple-windows','Tabs'),action('folder','Workspaces'),
-    { type: 'blank', label: '' },{ type: 'blank', label: '' },{ type: 'blank', label: '' },
   ], 'shortcuts-folder.png');
   await renderDeck([
     action('chevron-left','Back'),action('split-horizontal','Split right'),action('split-vertical','Split down'),
