@@ -1,7 +1,7 @@
 namespace Herdr;
 
 public enum ClosePaneButtonEvent { Press, LongPress, RepeatPress, Release }
-public enum ClosePaneGestureAction { None, Arm, Confirm }
+public enum ClosePaneGestureAction { None, Tap, Arm, Confirm }
 
 public sealed class ClosePaneGesture
 {
@@ -21,9 +21,9 @@ public sealed class ClosePaneGesture
                 this.held = true;
                 return armed ? ClosePaneGestureAction.None : ClosePaneGestureAction.Arm;
             case ClosePaneButtonEvent.Release:
-                var confirm = this.pressed && !this.held && armed;
+                var released = this.pressed && !this.held;
                 this.Cancel();
-                return confirm ? ClosePaneGestureAction.Confirm : ClosePaneGestureAction.None;
+                return !released ? ClosePaneGestureAction.None : armed ? ClosePaneGestureAction.Confirm : ClosePaneGestureAction.Tap;
             default:
                 return ClosePaneGestureAction.None;
         }

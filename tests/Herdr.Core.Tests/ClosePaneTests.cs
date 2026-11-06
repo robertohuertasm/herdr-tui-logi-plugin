@@ -9,7 +9,7 @@ public class ClosePaneTests
     {
         var gesture = new ClosePaneGesture();
         Assert.Equal(ClosePaneGestureAction.None, gesture.Process(ClosePaneButtonEvent.Press, false));
-        Assert.Equal(ClosePaneGestureAction.None, gesture.Process(ClosePaneButtonEvent.Release, false));
+        Assert.Equal(ClosePaneGestureAction.Tap, gesture.Process(ClosePaneButtonEvent.Release, false));
         Assert.Equal(ClosePaneGestureAction.None, gesture.Process(ClosePaneButtonEvent.Press, false));
         Assert.Equal(ClosePaneGestureAction.Arm, gesture.Process(ClosePaneButtonEvent.LongPress, false));
         Assert.Equal(ClosePaneGestureAction.None, gesture.Process(ClosePaneButtonEvent.RepeatPress, true));

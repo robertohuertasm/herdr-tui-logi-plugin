@@ -25,7 +25,9 @@ Agents, Back beside the native Back returns to the agent list; the standalone
 Shortcuts folder leaves that position blank. Each shortcut is independently assignable.
 
 **Recent Agent 1–9** are individual keys for the agents in recent-state-change
-order; press one to focus its pane. **Space 1–9** show each numbered workspace's
+order; press one to focus its pane, or hold it and then press **Close?** within
+three seconds to close that pane. The held agent is pinned, so a reorder during
+confirmation cannot close a different one. **Space 1–9** show each numbered workspace's
 status: press to focus the workspace, then press again to cycle panes in its
 active tab. Unoccupied slots and an offline server have distinct indicators.
 
@@ -37,7 +39,7 @@ pane or its terminal has changed before confirmation.
 
 | Action | What it does |
 |---|---|
-| **Recent Agent 1–9** | Shows agents in recent state-change order; press to focus. |
+| **Recent Agent 1–9** | Shows agents in recent state-change order; press to focus, hold and confirm to close its pane. |
 | **Space 1–9** | Shows a workspace's status; press to focus, then cycle its active tab's panes. |
 | **Herdr TUI** | Open shortcuts, cycle panes and browse live agents. Hold an agent and confirm to close its pane. |
 | **Herdr shortcuts** | Zoom, cycle panes, and open Layout, Tabs or Workspaces. Each shortcut is also assignable separately. |
