@@ -25,6 +25,9 @@ public sealed class HerdrKeypadPlugin : Plugin
 
     public override void Load()
     {
+        this.Log.Info($"Agent focus: {(Config.Load().ExperimentalGoToAgentFocus ? "experimental hybrid Go to spike" : "server API")}");
+        if (Config.Load().ExperimentalGoToAgentFocus)
+            this.Log.Warning("Experimental hybrid agent-focus enabled (2026-11-18 v5, default-on); immediate Go to typing, configurable input delay, duplicate presses dropped");
         foreach (var action in Navigation.All) this.AddDynamicAction(new ShortcutCommand(this, action));
         for (var slot = 1; slot <= FixedSlots.Count; slot++)
         {
@@ -33,11 +36,13 @@ public sealed class HerdrKeypadPlugin : Plugin
         }
         foreach (var action in this.fixedSlots) this.AddDynamicAction(action);
         this.Board.Changed += this.RedrawSlots;
+        this.Client.AgentFocusChanged += this.Board.NavigationChanged;
         _ = Task.Run(() => this.Board.RunAsync(this.stop.Token));
     }
     public override void Unload()
     {
         this.Board.Changed -= this.RedrawSlots;
+        this.Client.AgentFocusChanged -= this.Board.NavigationChanged;
         this.stop.Cancel();
     }
 

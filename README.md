@@ -62,11 +62,14 @@ Remote entries show a small R badge on the status icon, keeping their titles
 free of machine prefixes. Remote snapshots refresh in the
 background every ten seconds; unavailable machines are omitted and failures are
 logged without blocking local agents. Both the local CLI and remote installation
-must support machine API forwarding. Set `HERDR_BIN_PATH` if the CLI is installed
+must support machine API forwarding for direct focus/close commands. Older SSH
+installations can still supply agent snapshots through a read-only SSH fallback.
+Set `HERDR_BIN_PATH` if the CLI is installed
 outside `~/.local/bin`, standard Homebrew locations, or the service's PATH.
 
-Agent focus and confirmed close are routed to the originating server. Server focus does not switch
-the machine displayed by an already-open Herdr TUI.
+Direct focus and confirmed close are routed to the originating server. Server
+focus alone does not switch the machine displayed by an already-open Herdr TUI;
+hybrid agent focus uses native Go to to activate another machine.
 Space keys and layout shortcuts operate on the local server. A combined list uses
 locally observed status changes for recency because server sequence counters are
 independent; it does not reproduce the TUI's custom filters or client-specific
@@ -86,9 +89,10 @@ If you customize Herdr's prefix or Go to binding, set `goToShortcut` in
 `ctrl`, `alt`, `shift` and `cmd`, followed by a single letter or digit.
 
 **Cross-machine navigation:** remote agents are listed and their focus/close
-requests go to the producing server. A successful server focus does **not**
-select that machine in an already-open TUI. Select the machine or agent in
-Herdr's UI/Go to when moving between Local and a saved SSH machine.
+requests target the producing server. Server-API focus alone does **not** select
+that machine in an already-open TUI. The default hybrid agent-focus mode uses
+native Go to for that step. With hybrid mode disabled, select the machine or
+agent in Herdr's UI/Go to when moving between machines.
 
 Space keys, Previous/Next Workspace, Cycle panes/tabs and other layout shortcuts
 operate through the **local server**, even when the TUI displays a remote
@@ -96,6 +100,63 @@ machine. They do not cycle across machines. Herdr's own native workspace/agent
 navigation can cross connected machines, but those optional bindings are not
 configured or provided by this plugin. You can assign your own keyboard macros
 in Logi Options+ and configure matching native bindings in Herdr.
+
+## Experimental hybrid agent focus
+
+Available in the development build on `main`; not yet included in the packaged
+v0.1.5 release.
+
+The experimental mode makes agent buttons in the Agents folder and Recent Agent
+keys use direct server focus when the destination is on the selected machine.
+When it is on another machine, native Go to searches the pane ID and presses
+Enter. It is enabled by default. To disable it, merge this setting into
+`~/.config/herdr-logi-plugin/config.json`:
+
+```json
+{ "terminalApp": "Warp", "experimentalGoToAgentFocus": false }
+```
+
+Set it to `true` to re-enable hybrid focus. Configuration is read on every
+agent press; disabling the flag returns to server-API focus. Space keys and
+pane/tab/layout controls retain their existing behavior.
+
+The same-machine route reads the local CLI's saved selection. Changing between
+different remote agents keeps the direct one-call focus route; repeating a
+remote target checks fresh focus before doing anything. A confirmed current
+agent is left in place. Unknown selection or a failed direct focus falls back
+to Go to. While a navigation is running, and for one second after a Go to jump,
+additional presses are ignored instead of queued. The destination key shows
+**Opening...** while the navigation is being prepared. The saved selection is
+shared client state, not a live acknowledgement from a particular window: use this mode with
+one intended Herdr TUI client. Manual machine switches can race with a press.
+
+Go to opens and its search is filled immediately while fresh snapshots are read
+for Local and every enabled saved machine. Only Enter waits for the pane ID to
+be validated as unambiguous. Checks include ordinary shell panes and searchable
+labels. If validation fails, the filtered picker remains open for manual use;
+Enter is not sent. Close that picker before trying another automatic jump.
+
+Set `goToInputDelayMs` to adjust search/confirmation keyboard pauses. The default
+is **100 ms**; valid values are integers from 0 to 5000. If a slow terminal misses
+characters, try 200–300 ms. Lower values reduce typing pauses, not SSH lookup
+time. For example, merge `"goToInputDelayMs": 100` into the same config file.
+Invalid values fall back to 100 ms; this setting is read on every agent press.
+For an SSH CLI that lacks machine API forwarding, snapshots and background agent
+discovery can use direct noninteractive SSH without installing or restarting
+anything. Focus/close API commands still require forwarding; the experimental
+Go to route can navigate to those older-machine agents through the native UI.
+
+Keep the intended Herdr TUI in the front terminal tab, with other dialogs closed,
+and ensure `goToShortcut` matches its binding. This is keyboard automation: it
+cannot confirm that the picker opened or that the target became visible. Test
+it before relying on it. It also depends on terminal focus, Accessibility
+permissions, network latency, and the TUI's current snapshot being up to date.
+
+For a read-only target check, build `probes/HerdrProbe` and run
+`HerdrProbe --go-to-plan <agent-key>` (local pane ID, or
+`remote:<saved-machine-id>:<pane-id>`). This never sends keyboard input or a focus
+request. `HerdrProbe --agent-catalog` refreshes remote discovery and reports agent
+counts per machine.
 
 ## Install
 

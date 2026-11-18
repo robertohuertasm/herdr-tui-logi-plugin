@@ -33,6 +33,8 @@ public sealed class FixedSlotCommand : PluginDynamicCommand
         }
         if (this.closeConfirmation.IsArmed) return ("confirm", "Close?", false);
         var agent = FixedSlots.Recent(snapshot, this.slot);
+        if (agent is not null && this.owner.Client.PendingAgentKey == agent.Key)
+            return (agent.AgentStatus, "Opening...", agent.MachineId is not null);
         return agent is null ? ("none", $"Recent {this.slot}", false) : (agent.AgentStatus, FixedSlots.AgentLabel(agent, this.slot), agent.MachineId is not null);
     }
 

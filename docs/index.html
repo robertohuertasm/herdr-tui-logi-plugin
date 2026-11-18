@@ -64,7 +64,7 @@
     <p>Assign Recent Agent 1–9 directly, or open the Agents folder to browse live agents. A press focuses the pane; on Recent Agent keys and inside the Agents folder, a long press offers a confirmation before closing it. Remote agents carry a small R badge.</p>
   </section>
 
-  <p>Local and enabled saved SSH machines share the agent list. Remote discovery requires a Herdr CLI and remote installation that support machine API forwarding. Remote snapshots refresh every ten seconds. Space and layout shortcuts operate on the local server; server focus does not switch the machine displayed by an existing TUI.</p>
+  <p>Local and enabled saved SSH machines share the agent list. Remote snapshots refresh every ten seconds; older SSH installations can supply snapshots through a read-only SSH fallback. Direct focus/close commands require machine API forwarding. Space and layout shortcuts operate on the local server; hybrid agent focus uses native Go to when changing machines.</p>
 
   <section>
     <h2>Shortcuts</h2>
@@ -79,9 +79,15 @@
     <h2>Go to and navigation limits</h2>
     <p><b>Go to</b> opens Herdr's native picker using <b>Ctrl+B, then G</b>. With default Herdr bindings, no configuration change is needed. This macOS action activates the terminal and sends keys through System Events, requiring Accessibility access for <b>Logi Plugin Service</b>. Keep the intended Herdr TUI active in that terminal.</p>
     <p>For a custom prefix or Go to binding, set <code>goToShortcut</code> in <code>~/.config/herdr-logi-plugin/config.json</code> (or <code>HERDR_LOGI_CONFIG</code>) to match. The default is <code>"ctrl+b,g"</code>; commas separate successive strokes.</p>
-    <p><b>Remote monitoring and focus are different.</b> Remote agents appear in the combined list and their focus/close requests reach their own server. A successful server focus does <b>not</b> switch the machine displayed by an existing TUI. Select the machine or agent in Herdr's UI or Go to when moving between Local and a saved SSH machine.</p>
+    <p><b>Server focus alone does not select a machine.</b> The default hybrid agent-focus mode uses direct API focus on the selected machine and native Go to when changing machines. With hybrid focus disabled, select the machine or agent in Herdr's UI or Go to yourself.</p>
     <p>Space keys, Previous/Next Workspace, Cycle panes/tabs and layout shortcuts operate on the <b>local server</b>, even while the TUI displays a remote machine. They do not cycle across machines.</p>
     <p>Herdr's native workspace/agent navigation can cross connected machines using optional keybindings. This plugin does not configure or provide those bindings; you can create your own keyboard macros in Logi Options+ with matching shortcuts configured in Herdr.</p>
+    <h3>Experimental hybrid agent focus</h3>
+    <p><b>Development build:</b> these hybrid-focus features are available on <code>main</code> and are not yet included in the packaged v0.1.5 release.</p>
+    <p>Hybrid agent focus is <b>enabled by default</b>. To disable it, set <code>"experimentalGoToAgentFocus": false</code> in <code>~/.config/herdr-logi-plugin/config.json</code>. Set it to <code>true</code> to re-enable it. Configuration is read on each agent press; no restart is needed.</p>
+    <p>The quick route reads Herdr's locally saved machine selection. When Go to is needed, its picker opens and the search is filled immediately while Local and remote snapshots are checked. Only Enter waits for validation. If that fails, the filtered picker stays open for manual use. The destination key shows <b>Opening...</b> while working; additional presses are ignored during navigation and for one second after Go to, rather than queued. A confirmed current agent is left in place. Use one intended Herdr TUI client, keep its terminal tab active, and close other dialogs. Saved selection does not acknowledge what a particular window displays.</p>
+    <p>Set <code>"goToInputDelayMs": 100</code> in the same config file to adjust search and confirmation keyboard pauses. The default is <b>100 ms</b>; valid values are integers from 0 to 5000. If characters are missed, try 200–300 ms. Lower values reduce typing pauses, not SSH lookup time. Invalid values use 100 ms; no restart is needed.</p>
+    <p>Enabled saved machines are discovered automatically. For older SSH installations without machine API forwarding, agent discovery can read snapshots over noninteractive SSH without installing or restarting the remote server.</p>
   </section>
 
   <section>

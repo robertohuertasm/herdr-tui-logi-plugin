@@ -8,6 +8,7 @@ namespace Herdr;
 public sealed class RemoteAgents
 {
     private readonly Func<string[], Task<string>> run;
+    private readonly Func<string[], Task<string>> runSsh;
     private readonly object gate = new();
     private IReadOnlyList<Agent> agents = [];
     private Task? refresh;
@@ -15,7 +16,35 @@ public sealed class RemoteAgents
     private string? lastError;
 
     public RemoteAgents() : this(RunAsync) { }
-    internal RemoteAgents(Func<string[], Task<string>> run) => this.run = run;
+    internal RemoteAgents(Func<string[], Task<string>> run, Func<string[], Task<string>>? runSsh = null)
+    {
+        this.run = run;
+        this.runSsh = runSsh ?? (args => RunProcessAsync("/usr/bin/ssh", args));
+    }
+
+    internal async Task<JsonElement> MachineProfilesAsync()
+    {
+        using var profiles = JsonDocument.Parse(await run(["machine", "list", "--json"]));
+        return profiles.RootElement.Clone();
+    }
+
+    internal async Task<IReadOnlyList<GoToEndpoint>> GoToEndpointsAsync(JsonElement? machineProfiles = null)
+    {
+        var profiles = machineProfiles ?? await MachineProfilesAsync();
+        using var limit = new SemaphoreSlim(4);
+        return await Task.WhenAll(profiles.EnumerateArray()
+            .Where(p => p.GetProperty("enabled").GetBoolean()).Select(async profile =>
+            {
+                await limit.WaitAsync();
+                try
+                {
+                    var id = profile.GetProperty("id").GetString()!;
+                    var label = profile.GetProperty("label").GetString() ?? id;
+                    return await ReadEndpointAsync(id, label, profile);
+                }
+                finally { limit.Release(); }
+            }));
+    }
 
     public IReadOnlyList<Agent> Read()
     {
@@ -49,7 +78,7 @@ public sealed class RemoteAgents
                     {
                         var id = p.GetProperty("id").GetString()!;
                         var label = p.GetProperty("label").GetString() ?? id;
-                        return await SnapshotAsync(id, label);
+                        return Agents(await ReadEndpointAsync(id, label, p));
                     }
                     catch (Exception e)
                     {
@@ -70,14 +99,41 @@ public sealed class RemoteAgents
         }
     }
 
-    public async Task<IReadOnlyList<Agent>> SnapshotAsync(string machineId, string label)
+    public async Task<IReadOnlyList<Agent>> SnapshotAsync(string machineId, string label) =>
+        Agents(await ReadEndpointAsync(machineId, label));
+
+    private static IReadOnlyList<Agent> Agents(GoToEndpoint endpoint)
     {
-        using var document = JsonDocument.Parse(await run(["--machine", machineId, "api", "snapshot"]));
-        var root = document.RootElement;
-        if (root.TryGetProperty("result", out var result)) root = result;
-        var snapshot = root.GetProperty("snapshot").Deserialize<RawSnapshot>(HerdrClient.Json)
+        var snapshot = endpoint.Snapshot.Deserialize<RawSnapshot>(HerdrClient.Json)
             ?? throw new HerdrException("Remote snapshot missing");
-        return snapshot.Agents.Select(a => a with { MachineId = machineId, MachineLabel = label }).ToList();
+        return snapshot.Agents.Select(a => a with { MachineId = endpoint.MachineId, MachineLabel = endpoint.Label }).ToList();
+    }
+
+    internal async Task<bool> IsAgentFocusedAsync(string machineId, string paneId)
+    {
+        var endpoint = await ReadEndpointAsync(machineId, machineId);
+        return endpoint.Snapshot.TryGetProperty("focused_pane_id", out var focused)
+            && focused.GetString() == paneId && Agents(endpoint).Any(a => a.PaneId == paneId);
+    }
+
+    private async Task<GoToEndpoint> ReadEndpointAsync(string id, string label, JsonElement? savedProfile = null)
+    {
+        string json;
+        try { json = await run(["--machine", id, "api", "snapshot"]); }
+        catch (HerdrException e) when (e.Message.Contains("does not support machine API forwarding", StringComparison.Ordinal))
+        {
+            // Shared by discovery, validation and the Go to catalog. This only
+            // reads the older server; no install, restart or mutating SSH call.
+            var profile = savedProfile ?? (await MachineProfilesAsync()).EnumerateArray()
+                .First(p => p.GetProperty("id").GetString() == id && p.GetProperty("enabled").GetBoolean());
+            var target = profile.GetProperty("target").GetString()!;
+            var session = profile.GetProperty("session").GetString() ?? "default";
+            var quotedSession = "'" + session.Replace("'", "'\\''") + "'";
+            json = await runSsh(["-o", "BatchMode=yes", "-o", "ConnectTimeout=5", "--", target,
+                $"herdr --session {quotedSession} api snapshot"]);
+        }
+        using var document = JsonDocument.Parse(json);
+        return new GoToEndpoint(id, label, GoToAgentFocus.Snapshot(document.RootElement));
     }
 
     public Task<string> PaneAsync(string machineId, string paneId, string action) =>
@@ -90,6 +146,11 @@ public sealed class RemoteAgents
         if (string.IsNullOrWhiteSpace(path))
             path = new[] { Path.Combine(home, ".local/bin/herdr"), "/opt/homebrew/bin/herdr", "/usr/local/bin/herdr" }
                 .FirstOrDefault(File.Exists) ?? "herdr";
+        return await RunProcessAsync(path, arguments);
+    }
+
+    private static async Task<string> RunProcessAsync(string path, string[] arguments)
+    {
         var start = new ProcessStartInfo(path) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
         // GUI hosts often lack the user's shell PATH; Herdr needs ssh for forwarding.
         start.Environment["PATH"] = $"/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin:{Environment.GetEnvironmentVariable("PATH")}";

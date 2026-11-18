@@ -28,6 +28,10 @@ public sealed class HerdrClient
     private readonly RecencyTracker combinedRecency = new();
     private readonly RemoteAgents remote;
     private readonly Terminal terminal;
+    private readonly SemaphoreSlim agentFocusGate = new(1, 1);
+    private DateTime goToSettlingUntil;
+    private string? lastFocusedAgentKey;
+    private string? pendingAgentKey;
     private int nextId;
     private bool warnedProtocol;
 
@@ -39,6 +43,8 @@ public sealed class HerdrClient
     }
 
     public string SocketPath { get; }
+    public string? PendingAgentKey => Volatile.Read(ref pendingAgentKey);
+    public event Action? AgentFocusChanged;
 
     // One request per connection: herdr answers with a single JSON line.
     public async Task<JsonElement> RequestAsync(string method, object? parameters = null, TimeSpan? timeout = null)
@@ -121,8 +127,9 @@ public sealed class HerdrClient
         };
     }
 
-    public async Task<Snapshot> GetAgentSnapshotAsync()
+    public async Task<Snapshot> GetAgentSnapshotAsync(bool refreshRemotes = false)
     {
+        if (refreshRemotes) await remote.RefreshAsync();
         var remotes = remote.Read();
         Snapshot local;
         try { local = await GetSnapshotAsync(); }
@@ -195,6 +202,110 @@ public sealed class HerdrClient
     public Task ActivateTerminalAsync() => terminal.ActivateAsync();
 
     public Task SendShortcutAsync(string sequence) => terminal.SendShortcutAsync(sequence);
+
+    public Task<string> GetGoToAgentQueryAsync(string agentKey) => GetGoToAgentQueryAsync(agentKey, null);
+
+    private async Task<string> GetGoToAgentQueryAsync(string agentKey, JsonElement? machineProfiles)
+    {
+        var local = RequestAsync("session.snapshot");
+        var remotes = remote.GoToEndpointsAsync(machineProfiles);
+        await Task.WhenAll(local, remotes);
+        var endpoints = new[] { new GoToEndpoint(null, "Local", GoToAgentFocus.Snapshot(await local)) }
+            .Concat(await remotes).ToList();
+        return GoToAgentFocus.Query(agentKey, endpoints);
+    }
+
+    public Task FocusAgentAsync(string agentKey) => FocusAgentAsync(agentKey, Config.Load());
+
+    internal async Task FocusAgentAsync(string agentKey, Config config)
+    {
+        if (!await agentFocusGate.WaitAsync(0))
+        {
+            Log.Info("Agent navigation in progress; additional press ignored");
+            return;
+        }
+        try
+        {
+            if (config.ExperimentalGoToAgentFocus && DateTime.UtcNow < goToSettlingUntil)
+            {
+                Log.Info("Agent navigation settling; additional press ignored");
+                return;
+            }
+            SetPendingAgent(agentKey);
+            if (!config.ExperimentalGoToAgentFocus) { await FocusPaneAsync(agentKey); return; }
+            JsonElement? profiles = null;
+            try { profiles = await remote.MachineProfilesAsync(); }
+            catch (Exception e) { Log.Warning($"Could not read selected machine; using Go to: {e.Message}"); }
+            if (profiles.HasValue && GoToAgentFocus.IsOnSelectedMachine(agentKey, profiles.Value))
+            {
+                try
+                {
+                    // Local checks are cheap. For remote navigation, only pay
+                    // for a fresh snapshot when repeating the previous target;
+                    // changing between remote agents keeps its one-call route.
+                    if ((!RemoteTarget(agentKey, out _, out _) || lastFocusedAgentKey == agentKey)
+                        && await IsAgentAlreadyFocusedAsync(agentKey))
+                    {
+                        lastFocusedAgentKey = agentKey;
+                        Log.Info("Requested agent is already focused; navigation skipped");
+                        return;
+                    }
+                    await FocusPaneAsync(agentKey);
+                    lastFocusedAgentKey = agentKey;
+                    Log.Info($"Hybrid agent focus: direct API on selected machine for {agentKey}");
+                    return;
+                }
+                catch (Exception e) { Log.Warning($"Direct agent focus failed; using Go to: {e.Message}"); }
+            }
+            // Match the standalone Go to button's responsiveness. Catalog
+            // reads overlap opening AND filling the picker. Only Enter waits
+            // for uniqueness validation; typing a filter selects nothing.
+            var query = agentKey;
+            if (RemoteTarget(agentKey, out _, out var targetPane)) query = targetPane;
+            GoToAgentFocus.ValidateQuery(query);
+            var preparing = OpenAndTypeGoToAsync(query, config);
+            var planning = GetGoToAgentQueryAsync(agentKey, profiles);
+            await Task.WhenAll(preparing, planning);
+            if (await planning != query) throw new HerdrException("Go to target changed during validation");
+            await terminal.ConfirmGoToAgentAsync(await preparing, config.GoToInputDelayMs);
+            lastFocusedAgentKey = agentKey;
+            // Selection is saved before activation finishes. Avoid the fast
+            // path immediately after our own keyboard-driven machine switch.
+            goToSettlingUntil = DateTime.UtcNow.AddSeconds(1);
+            Log.Info($"Hybrid agent focus: Go to submitted for {agentKey}; visible focus is not acknowledged by the API");
+        }
+        finally { SetPendingAgent(null); agentFocusGate.Release(); }
+    }
+
+    private async Task<string> OpenAndTypeGoToAsync(string query, Config config)
+    {
+        var application = await terminal.OpenGoToAsync(config.GoToShortcut);
+        await terminal.TypeGoToAgentQueryAsync(application, query, config.GoToInputDelayMs);
+        return application;
+    }
+
+    private async Task<bool> IsAgentAlreadyFocusedAsync(string agentKey)
+    {
+        try
+        {
+            if (RemoteTarget(agentKey, out var machine, out var pane)) return await remote.IsAgentFocusedAsync(machine, pane);
+            var snapshot = await GetSnapshotAsync();
+            return snapshot.FocusedPaneId == agentKey && snapshot.Agents.Any(a => a.PaneId == agentKey);
+        }
+        catch (Exception e)
+        {
+            Log.Info($"Could not verify current agent; keeping direct focus: {e.Message}");
+            return false;
+        }
+    }
+
+    private void SetPendingAgent(string? key)
+    {
+        if (Volatile.Read(ref pendingAgentKey) == key) return;
+        Volatile.Write(ref pendingAgentKey, key);
+        try { AgentFocusChanged?.Invoke(); }
+        catch (Exception e) { Log.Warning($"Could not update pending agent display: {e.Message}"); }
+    }
 
     public Task CreateTabAsync(string workspaceId) =>
         RequestAsync("tab.create", new { workspace_id = workspaceId, focus = true }, TabCreateTimeout);

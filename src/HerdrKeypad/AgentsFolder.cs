@@ -47,7 +47,9 @@ public sealed class AgentsFolder : PluginDynamicFolder
         foreach (var (a, index) in this.Owner.Board.Snapshot.Recent.Select((agent, index) => (agent, index)))
         {
             var tag = FixedSlots.AgentLabel(a, index + 1).GetHashCode(StringComparison.Ordinal);
-            yield return this.CreateCommandName($"agent:{(this.armed?.PaneId == a.Key ? "confirm" : a.AgentStatus + "-" + tag.ToString("x8"))}:{a.Key}");
+            var face = this.armed?.PaneId == a.Key ? "confirm"
+                : this.Owner.Client.PendingAgentKey == a.Key ? "opening" : a.AgentStatus + "-" + tag.ToString("x8");
+            yield return this.CreateCommandName($"agent:{face}:{a.Key}");
         }
     }
     private Agent? Find(string parameter)
@@ -65,6 +67,7 @@ public sealed class AgentsFolder : PluginDynamicFolder
         var agent = this.Find(actionParameter);
         if (agent is null) return " ";
         if (actionParameter.StartsWith("agent:confirm:", StringComparison.Ordinal)) return "Close?";
+        if (this.Owner.Client.PendingAgentKey == agent.Key) return "Opening...";
         var index = this.Owner.Board.Snapshot.Recent.ToList().FindIndex(a => a.Key == agent.Key);
         return FixedSlots.AgentLabel(agent, index + 1);
     }
@@ -172,7 +175,7 @@ public sealed class AgentsFolder : PluginDynamicFolder
     }
     private async Task FocusAsync(string paneId)
     {
-        try { await this.Owner.Client.FocusPaneAsync(paneId); }
+        try { await this.Owner.Client.FocusAgentAsync(paneId); }
         catch (Exception e) { this.Plugin.Log.Error($"Could not focus Herdr pane: {e.Message}"); }
     }
     private void Changed()

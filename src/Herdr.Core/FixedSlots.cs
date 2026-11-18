@@ -32,12 +32,7 @@ public sealed class FixedSlotActions(HerdrClient client)
 {
     private readonly SemaphoreSlim gate = new(1, 1);
 
-    public async Task FocusRecentAsync(string paneId)
-    {
-        await this.gate.WaitAsync();
-        try { await client.FocusPaneAsync(paneId); }
-        finally { this.gate.Release(); }
-    }
+    public Task FocusRecentAsync(string paneId) => client.FocusAgentAsync(paneId);
 
     public async Task FocusSpaceAsync(int slot)
     {

@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace Herdr;
 
-public sealed record Config(string? TerminalApp, string GoToShortcut = "ctrl+b,g")
+public sealed record Config(string? TerminalApp, string GoToShortcut = "ctrl+b,g", bool ExperimentalGoToAgentFocus = true, int GoToInputDelayMs = 100)
 {
     public static readonly string DefaultPath =
         Environment.GetEnvironmentVariable("HERDR_LOGI_CONFIG")
@@ -22,7 +22,13 @@ public sealed record Config(string? TerminalApp, string GoToShortcut = "ctrl+b,g
             string? Read(string key) => root.ValueKind == JsonValueKind.Object
                 && root.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String
                 ? value.GetString() : null;
-            return new Config(Read("terminalApp"), Read("goToShortcut") ?? "ctrl+b,g");
+            var spike = root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("experimentalGoToAgentFocus", out var flag) || flag.ValueKind == JsonValueKind.True;
+            var delay = root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("goToInputDelayMs", out var inputDelay)
+                && inputDelay.ValueKind == JsonValueKind.Number && inputDelay.TryGetInt32(out var milliseconds)
+                && milliseconds is >= 0 and <= 5000 ? milliseconds : 100;
+            return new Config(Read("terminalApp"), Read("goToShortcut") ?? "ctrl+b,g", spike, delay);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -164,12 +170,34 @@ public class Terminal
 
     public virtual async Task SendShortcutAsync(string sequence)
     {
+        _ = await RunShortcutAsync(sequence);
+    }
+
+    private async Task<string> RunShortcutAsync(string sequence)
+    {
         if (!OperatingSystem.IsMacOS()) throw new HerdrException("Native keyboard shortcuts currently require macOS");
         var config = Config.Load();
         if (config.TerminalApp == "") throw new HerdrException("Set terminalApp to enable keyboard shortcuts");
         var target = config.TerminalApp ?? await DetectBundleAsync()
             ?? throw new HerdrException("Could not identify the Herdr terminal");
         await RunAsync("/usr/bin/osascript", "-e", KeyboardShortcut.Script(target, sequence));
+        return target;
+    }
+
+    public virtual Task<string> OpenGoToAsync(string shortcut) => RunShortcutAsync(shortcut);
+
+    public virtual async Task TypeGoToAgentQueryAsync(string application, string query, int inputDelayMs)
+    {
+        if (!OperatingSystem.IsMacOS()) throw new HerdrException("Experimental Go to focus requires macOS");
+        // Never reactivate the app after opening the picker. If the user has
+        // switched apps, the foreground guards abort before any text is sent.
+        await RunAsync("/usr/bin/osascript", "-e", KeyboardShortcut.TypeGoToScript(application, query, inputDelayMs));
+    }
+
+    public virtual async Task ConfirmGoToAgentAsync(string application, int inputDelayMs)
+    {
+        if (!OperatingSystem.IsMacOS()) throw new HerdrException("Experimental Go to focus requires macOS");
+        await RunAsync("/usr/bin/osascript", "-e", KeyboardShortcut.ConfirmGoToScript(application, inputDelayMs));
     }
 
     protected virtual async Task<string> RunAsync(string command, params string[] args)

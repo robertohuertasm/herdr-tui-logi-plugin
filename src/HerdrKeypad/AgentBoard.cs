@@ -9,6 +9,7 @@ public sealed class AgentBoard(HerdrClient client)
     public Snapshot Snapshot => Volatile.Read(ref this.snapshot);
     public bool Online => Volatile.Read(ref this.online);
     public event Action? Changed;
+    public void NavigationChanged() => this.Changed?.Invoke();
 
     public async Task RunAsync(CancellationToken stop)
     {

@@ -7,6 +7,28 @@ public class RemoteAgentsTests
     private const string Snapshot = """{"snapshot":{"agents":[{"pane_id":"w1:p1","terminal_id":"term","workspace_id":"w1","agent":"codex","agent_status":"working"}]}}""";
 
     [Fact]
+    public async Task BackgroundDiscoveryIncludesAnOlderSshMachineWithoutForwarding()
+    {
+        using var log = new LogCapture();
+        var sshCalls = 0;
+        var remote = new RemoteAgents(args => args[0] == "machine"
+            ? Task.FromResult("""[{"id":"new","label":"New","enabled":true},{"id":"old","label":"Old","target":"legacy-host","session":"default","enabled":true}]""")
+            : args[1] == "new" ? Task.FromResult(Snapshot)
+                : throw new HerdrException("remote Herdr does not support machine API forwarding"),
+            args =>
+            {
+                Assert.Equal("legacy-host", args[^2]);
+                Assert.Equal("herdr --session 'default' api snapshot", args[^1]);
+                sshCalls++;
+                return Task.FromResult(Snapshot);
+            });
+        await remote.RefreshAsync();
+        Assert.Equal(new[] { "new", "old" }, remote.Read().Select(a => a.MachineId));
+        Assert.Equal(1, sshCalls);
+        Assert.Empty(log.Warnings);
+    }
+
+    [Fact]
     public async Task RemoteSnapshotQualifiesIdentityAndRoutesFocusWithoutAShell()
     {
         var calls = new List<string[]>();
