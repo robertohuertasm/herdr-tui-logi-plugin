@@ -103,8 +103,7 @@ in Logi Options+ and configure matching native bindings in Herdr.
 
 ## Experimental hybrid agent focus
 
-Available in the development build on `main`; not yet included in the packaged
-v0.1.5 release.
+Included since v0.1.6.
 
 The experimental mode makes agent buttons in the Agents folder and Recent Agent
 keys use direct server focus when the destination is on the selected machine.
